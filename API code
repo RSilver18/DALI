@@ -1,0 +1,54 @@
+from flask import Flask, jsonify, request
+import mysql.connector
+
+app = Flask(__name__)
+
+def connect_to_db():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="passcode",  # Change this to your MySQL password
+        database="social_data",
+        charset='utf8'
+    )
+
+# GET all users
+@app.route('/users', methods=['GET'])
+def get_users():
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")
+    users = cursor.fetchall()
+    conn.close()
+    return jsonify(users)
+
+# GET posts with engagement
+@app.route('/posts/engagement', methods=['GET'])
+def get_posts_with_engagement():
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT posts.post_id, users.username, posts.content, engagement.likes 
+        FROM posts 
+        JOIN users ON posts.user_id = users.user_id
+        JOIN engagement ON posts.post_id = engagement.post_id
+    ''')
+    posts = cursor.fetchall()
+    conn.close()
+    return jsonify(posts)
+
+# POST new user
+@app.route('/add_user', methods=['POST'])
+def add_user():
+    data = request.json
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO users (username, email) VALUES (%s, %s)", 
+                   (data['username'], data['email']))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "User added successfully!"})
+
+# Run the API
+if __name__ == '__main__':
+    app.run(debug=True)
