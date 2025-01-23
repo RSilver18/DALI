@@ -1,0 +1,220 @@
+import pymysql as pm
+import pymysql as mysql
+
+conn=pm.connect(host="localhost",user="root",password="world12345678",charset='utf8')
+
+cursor = conn.cursor()
+
+# Create a new database
+cursor.execute("CREATE DATABASE IF NOT EXISTS social_data")
+cursor.execute("USE social_data")
+
+# Create Users Table
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS users (
+    user_id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    name VARCHAR(100),
+    platform VARCHAR(50)
+)
+''')
+
+# Create Posts Table
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS posts (
+    post_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    content TEXT,
+    timestamp DATETIME,
+    FOREIGN KEY(user_id) REFERENCES users(user_id)
+)
+''')
+
+# Create Engagement Table
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS engagement (
+    engagement_id INT PRIMARY KEY AUTO_INCREMENT,
+    post_id INT,
+    likes INT,
+    comments INT,
+    shares INT,
+    FOREIGN KEY(post_id) REFERENCES posts(post_id)
+)
+''')
+
+users_data = [
+    ("user123", "Alice Johnson", "Instagram"),
+    ("user456", "Bob Smith", "Twitter"),
+    ("user789", "Charlie Brown", "Facebook")
+]
+
+cursor.executemany('''
+INSERT INTO users (username, name, platform)
+VALUES (%s, %s, %s)
+''', users_data)
+
+# Insert data into Posts table
+posts_data = [
+    (1, "Exploring the mountains! #adventure", "2023-10-01 12:00:00"),
+    (2, "Just tried a new recipe, yum!", "2023-10-02 14:30:00"),
+    (3, "Attending a tech conference. #AI", "2023-10-03 18:45:00")
+]
+
+cursor.executemany('''
+INSERT INTO posts (user_id, content, timestamp)
+VALUES (%s, %s, %s)
+''', posts_data)
+
+# Insert data into Engagement table
+engagement_data = [
+    (1, 150, 20, 10),
+    (2, 200, 30, 15),
+    (3, 100, 10, 5)
+]
+
+cursor.executemany('''
+INSERT INTO engagement (post_id, likes, comments, shares)
+VALUES (%s, %s, %s, %s)
+''', engagement_data)
+
+# Commit the changes and close the connection
+conn.commit()
+conn.close()
+
+def connect_to_db():
+    """Establish connection to MySQL database."""
+    return mysql.connect(
+        host="localhost",
+        user="root",
+        password="world12345678",
+        database="social_data",
+        charset="utf81"
+    )
+
+def fetch_posts_with_engagement():
+    """Fetch posts with engagement data and display results."""
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    
+    query = '''
+    SELECT posts.post_id, users.username, posts.content, engagement.likes 
+    FROM posts 
+    JOIN users ON posts.user_id = users.user_id
+    JOIN engagement ON posts.post_id = engagement.post_id
+    '''
+    
+    cursor.execute(query)
+    results = cursor.fetchall()
+    print("\n--- Posts with Engagement ---")
+    for row in results:
+        print(f"Post ID: {row[0]}, Username: {row[1]}, Content: {row[2]}, Likes: {row[3]}")
+    
+    conn.close()
+
+
+def insert_user():
+    """Insert a new user into the database."""
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    username = input("Enter the username: ")
+    email = input("Enter the email: ")
+    query = "INSERT INTO users (username, email) VALUES (%s, %s)"
+    cursor.execute(query, (username, email))
+    conn.commit()
+    print(" User added successfully!")
+    conn.close()
+
+def insert_post():
+    """Insert a new post into the database."""
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    user_id = input("Enter the user ID: ")
+    content = input("Enter the post content: ")
+    query = "INSERT INTO posts (user_id, content) VALUES (%s, %s)"
+    cursor.execute(query, (user_id, content))
+    conn.commit()
+    print(" Post added successfully!")
+    conn.close()
+
+def insert_engagement():
+    """Insert new engagement data."""
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    post_id = input("Enter the post ID: ")
+    likes = input("Enter the number of likes: ")
+    comments = input("Enter the number of comments: ")
+    shares = input("Enter the number of shares: ")
+    query = "INSERT INTO engagement (post_id, likes, comments, shares) VALUES (%s, %s, %s, %s)"
+    cursor.execute(query, (post_id, likes, comments, shares))
+    conn.commit()
+    print("Engagement data added successfully!")
+    conn.close()
+
+def delete_entry(table):
+    """Delete an entry from the specified table."""
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    entry_id = input(f"Enter the ID to delete from {table}: ")
+    query = f"DELETE FROM {table} WHERE {table[:-1]}_id = %s"  # Adjusts for table naming
+    cursor.execute(query, (entry_id,))
+    conn.commit()
+    print(" Entry deleted successfully from {table}!")
+    conn.close()
+
+def main_menu():
+    """Main menu for the user to interact with."""
+    while True:
+        print("\n====== Social Media Database Menu ======")
+        print("1. View all Users")
+        print("2. View all Posts")
+        print("3. View all Engagement Data")
+        print("4. View Posts with Engagement")
+        print("5. Add a New User")
+        print("6. Add a New Post")
+        print("7. Add Engagement Data")
+        print("8. Delete a User")
+        print("9. Delete a Post")
+        print("10. Delete Engagement Data")
+        print("11. Exit")
+
+        choice = input("Enter your choice (1-11): ")
+
+        if choice == '1':
+            fetch_and_display("SELECT * FROM users", "Users")
+        elif choice == '2':
+            fetch_and_display("SELECT * FROM posts", "Posts")
+        elif choice == '3':
+            fetch_and_display("SELECT * FROM engagement", "Engagement Data")
+        elif choice == '4':
+            fetch_and_display('''
+                SELECT posts.post_id, users.username, posts.content, 
+                       engagement.likes, engagement.comments, engagement.shares
+                FROM posts
+                JOIN users ON posts.user_id = users.user_id
+                JOIN engagement ON posts.post_id = engagement.post_id
+            ''', "Posts with Engagement")
+        elif choice == '5':
+            insert_user()
+        elif choice == '6':
+            insert_post()
+        elif choice == '7':
+            insert_engagement()
+        elif choice == '8':
+            delete_entry("users")
+        elif choice == '9':
+            delete_entry("posts")
+        elif choice == '10':
+            delete_entry("engagement")
+        elif choice == '11':
+            print("Exiting the program. Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please enter a number between 1 and 11.")
+
+# Run the menu
+main_menu()
+
+
+
+
+
