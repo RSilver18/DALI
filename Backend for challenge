@@ -1,7 +1,7 @@
 import pymysql as pm
 import pymysql as mysql
 
-conn=pm.connect(host="localhost",user="root",password="world12345678",charset='utf8')
+conn=pm.connect(host="localhost",user="root",password="passcode",charset='utf8')
 
 cursor = conn.cursor()
 
@@ -86,7 +86,7 @@ def connect_to_db():
     return mysql.connect(
         host="localhost",
         user="root",
-        password="world12345678",
+        password="passcode",
         database="social_data",
         charset="utf81"
     )
